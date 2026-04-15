@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ouxe Representações</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+body { font-family: Arial; background: #f1f5f9; }
+.card { background:white; border-radius:20px; padding:15px; transition:.3s; }
+.card:hover { transform:translateY(-5px); }
+.img { width:100%; height:180px; object-fit:contain; }
+.admin-hidden { display:none; }
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="bg-slate-900 text-white p-4 flex justify-between items-center">
+<div onclick="loginAdmin()" class="flex items-center gap-3 cursor-pointer">
+<img src="imagens/logo.jpg" style="width:60px">
+<h1 class="font-bold text-xl">OUXE REPRESENTAÇÕES</h1>
+</div>
+
+<button onclick="abrirCarrinho()" class="bg-blue-600 px-4 py-2 rounded">
+🛒 <span id="cartCount">0</span>
+</button>
+</header>
+
+<main class="p-5">
+
+<!-- ADMIN -->
+<div id="admin" class="admin-hidden bg-white p-4 rounded mb-6">
+<h2 class="font-bold mb-3">ADMIN</h2>
+
+<input id="cod" placeholder="Código" class="border p-2">
+<input id="forn" placeholder="Fornecedor" class="border p-2">
+<input id="desc" placeholder="Descrição" class="border p-2">
+<input id="preco" placeholder="Preço" class="border p-2">
+
+<button onclick="addProduto()" class="bg-green-600 text-white p-2 mt-2">
+Salvar Produto
+</button>
+</div>
+
+<input id="busca" oninput="buscar()" placeholder="Buscar..." class="p-3 w-full mb-6">
+
+<div id="grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+</main>
+
+<!-- MODAL CARRINHO -->
+<div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center">
+<div class="bg-white p-6 rounded w-full max-w-lg">
+
+<h2 class="font-bold text-xl mb-4">Pedido</h2>
+
+<div id="itens"></div>
+
+<p id="total" class="font-bold text-lg mt-4"></p>
+
+<button onclick="enviarWhats()" class="bg-green-600 text-white w-full p-3 mt-4">
+Enviar WhatsApp
+</button>
+
+<button onclick="fecharCarrinho()" class="mt-2 w-full">
+Fechar
+</button>
+
+</div>
+</div>
+
+<script>
+
+let produtos=[];
+let carrinho=[];
+let admin=false;
+let click=0;
+
+// ================= PRODUTOS =================
+
+function carregar(){
+const data = localStorage.getItem("produtos");
+if(data){
+produtos = JSON.parse(data);
+}else{
+produtos = [
+{cod:"4009",desc:"AGUA BORICADA",forn:"JCO",por:"3.08"},
+{cod:"4010",desc:"AGUA OXIGENADA",forn:"JCO",por:"2.60"}
+];
+salvar();
+}
+}
+
+function salvar(){
+localStorage.setItem("produtos",JSON.stringify(produtos));
+}
+
+// ================= RENDER =================
+
+function render(lista=produtos){
+grid.innerHTML="";
+lista.forEach(p=>{
+grid.innerHTML+=`
+<div class="card">
+${admin?`<button onclick="del('${p.cod}')">❌</button>`:""}
+
+<img src="imagens/${p.cod}.jpg"
+onerror="this.src='https://via.placeholder.com/300x200'"
+class="img">
+
+<h3>${p.desc}</h3>
+<p>${p.forn}</p>
+<p>R$ ${p.por}</p>
+
+<input type="number" id="q${p.cod}" value="1">
+
+<button onclick="addCarrinho('${p.cod}')">Adicionar</button>
+</div>
+`;
+});
+}
+
+// ================= ADMIN =================
+
+function loginAdmin(){
+click++;
+if(click==5){
+let s=prompt("Senha:");
+if(btoa(s)=="bHQ4OGJhMTQ="){
+admin=true;
+document.getElementById("admin").classList.remove("admin-hidden");
+}
+click=0;
+}
+}
+
+function addProduto(){
+let p={
+cod:cod.value,
+forn:forn.value.toUpperCase(),
+desc:desc.value.toUpperCase(),
+por:parseFloat(preco.value).toFixed(2)
+};
+
+produtos.push(p);
+salvar();
+render();
+
+cod.value="";forn.value="";desc.value="";preco.value="";
+}
+
+function del(c){
+produtos=produtos.filter(p=>p.cod!=c);
+salvar();
+render();
+}
+
+// ================= BUSCA =================
+
+function buscar(){
+let t=busca.value.toLowerCase();
+render(produtos.filter(p=>p.desc.toLowerCase().includes(t)||p.cod.includes(t)));
+}
+
+// ================= CARRINHO =================
+
+function addCarrinho(c){
+let p=produtos.find(x=>x.cod==c);
+let qtd=parseInt(document.getElementById("q"+c).value);
+
+let ex=carrinho.find(i=>i.cod==c);
+
+if(ex){ex.qtd+=qtd;}
+else{carrinho.push({...p,qtd});}
+
+cartCount.innerText=carrinho.length;
+}
+
+function abrirCarrinho(){
+modal.classList.remove("hidden");
+
+let html="";
+let total=0;
+
+carrinho.forEach(i=>{
+let sub=i.qtd*parseFloat(i.por);
+total+=sub;
+
+html+=`<p>${i.desc} - ${i.qtd} = R$ ${sub.toFixed(2)}</p>`;
+});
+
+itens.innerHTML=html;
+total.innerText="Total: R$ "+total.toFixed(2);
+}
+
+function fecharCarrinho(){
+modal.classList.add("hidden");
+}
+
+function enviarWhats(){
+let txt="*PEDIDO OUXE*%0A";
+let total=0;
+
+carrinho.forEach(i=>{
+let sub=i.qtd*parseFloat(i.por);
+total+=sub;
+
+txt+=`${i.desc} Qtd:${i.qtd} = R$${sub.toFixed(2)}%0A`;
+});
+
+txt+=`TOTAL: R$ ${total.toFixed(2)}`;
+
+window.open("https://wa.me/5575981236160?text="+txt);
+}
+
+// ================= INIT =================
+
+carregar();
+render();
+
+</script>
+
+</body>
+</html>
