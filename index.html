@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ouxe Representações - Catálogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .admin-hidden { display: none; }
+        .product-card { transition: all 0.3s ease; border-radius: 1.5rem; overflow: hidden; background: white; border: 1px solid #e2e8f0; height: 100%; display: flex; flex-direction: column; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .product-img { width: 100%; height: 200px; object-fit: contain; background: #fff; padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        #cartModal { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-slate-900 text-white shadow-xl border-b-4 border-blue-600 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-5 cursor-pointer" onclick="handleAdminClick()">
+                <div class="bg-white p-2 rounded-xl shadow-inner w-20 h-20 flex items-center justify-center overflow-hidden">
+                    <img src="logo.jpg" onerror="this.src='./logo.jpg'; this.onerror=function(){this.src='Logo.jpg.jpg'};" alt="Logo" class="max-h-full object-contain">
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tighter text-white uppercase">
+                        OUXE <span class="text-blue-500">REPRESENTAÇÕES</span>
+                    </h1>
+                    <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase mt-1">Distribuidor Autorizado</p>
+                </div>
+            </div>
+            
+            <button onclick="toggleCart()" class="bg-blue-600 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+                <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                <div class="leading-tight text-center">
+                    <span id="cartCount" class="block text-xl font-black">0</span>
+                    <span class="text-[10px] uppercase font-bold text-blue-100">Ver Pedido</span>
+                </div>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-10 w-full">
+        
+        <section id="adminPanel" class="admin-hidden bg-white border-2 border-amber-400 p-8 rounded-3xl mb-10 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3">
+                    <i data-lucide="shield-check" class="text-amber-500 w-8 h-8"></i> PAINEL ADMINISTRATIVO
+                </h3>
+                <button onclick="exitAdmin()" class="bg-red-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-red-700 transition-all flex items-center gap-2">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> SAIR
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-3">
+                    <p class="font-bold text-slate-700 text-sm uppercase">Novo Produto</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="newCod" placeholder="Cód" class="p-3 border rounded-lg outline-none">
+                        <input type="text" id="newForn" placeholder="Fornecedor" class="p-3 border rounded-lg outline-none">
+                    </div>
+                    <input type="text" id="newDesc" placeholder="Descrição" class="w-full p-3 border rounded-lg outline-none">
+                    <input type="text" id="newPrice" placeholder="Preço (R$)" class="w-full p-3 border rounded-lg outline-none">
+                    <button onclick="addProduct()" class="w-full bg-emerald-600 text-white font-black py-3 rounded-lg hover:bg-emerald-700">SALVAR</button>
+                </div>
+
+                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200 space-y-3">
+                    <p class="font-bold text-blue-700 text-sm uppercase text-center">Vincular Foto ao Produto</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="imgTargetCod" placeholder="Por Código" class="p-3 border rounded-lg outline-none">
+                        <input type="text" id="imgTargetName" placeholder="Ou por Nome" class="p-3 border rounded-lg outline-none">
+                    </div>
+                    <div class="border-2 border-dashed border-blue-300 rounded-xl p-4 bg-white text-center">
+                        <label class="cursor-pointer block">
+                            <span class="text-blue-600 font-bold block mb-2"><i data-lucide="upload" class="inline w-4 h-4"></i> Selecionar Imagem</span>
+                            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="updateFileNameLabel()">
+                            <p id="fileNameDisplay" class="text-[10px] text-slate-400 italic">Nenhum arquivo selecionado</p>
+                        </label>
+                    </div>
+                    <button onclick="processUpload()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-800 transition-all flex items-center justify-center gap-2">
+                        CONFIRMAR UPLOAD
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div class="mb-12 relative group">
+            <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Busque por nome, código ou fornecedor..." 
+                class="w-full p-6 pl-16 rounded-3xl border-none shadow-lg text-lg focus:ring-4 focus:ring-blue-500/20 outline-none transition-all">
+            <i data-lucide="search" class="absolute left-6 top-6 text-slate-400 group-focus-within:text-blue-500 transition-colors w-7 h-7"></i>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+    </main>
+
+    <div id="cartModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h2 class="text-2xl font-black">MEU PEDIDO</h2>
+                <button onclick="toggleCart()"><i data-lucide="x-circle" class="w-8 h-8 text-slate-400"></i></button>
+            </div>
+            <div id="cartItems" class="p-6 overflow-y-auto max-h-[50vh] space-y-4"></div>
+            <div class="p-6 border-t bg-slate-50">
+                <button onclick="sendToWhatsApp()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl">ENVIAR WHATSAPP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAdmin = false;
+        let cart = [];
+        let clickCount = 0;
+        let produtos = [
+            { cod: "4009", desc: "AGUA BORICADA 3%100ML", forn: "JCO FARMA", por: "3.08", img: "" },
+            { cod: "4010", desc: "ÁGUA OXIGENADA 10 VOLUMES 100ML", forn: "JCO FARMA", por: "2.60", img: "" },
+            { cod: "183", desc: "AGUARDENTE ALEMA PARAMED 30 ML", forn: "AMAZONAS", por: "3.69", img: "" },
+            { cod: "1612", desc: "ALCOOL CANFORADO 60ML", forn: "KRIFF", por: "6.56", img: "" },
+            { cod: "3546", desc: "BICARBONATO DE SÓDIO PÓ 80G", forn: "JCO FARMA", por: "4.68", img: "" },
+            { cod: "301", desc: "CERVEJA PRETA 200ML", forn: "BONATURY", por: "8.50", img: "" },
+            { cod: "240", desc: "ELIXIR LICOR CACAU (PIPERAZINA) 200ML", forn: "BONATURY", por: "11.98", img: "" },
+            { cod: "244", desc: "ELIXIR LICOR JOÃO PAPAES 200ML", forn: "BONATURY", por: "11.90", img: "" },
+            { cod: "2288", desc: "GLICERINA BIDESTILADA 100ML", forn: "KRIFF", por: "9.40", img: "" },
+            { cod: "1618", desc: "MEL COM POEJO KRIFF 60ML", forn: "KRIFF", por: "7.94", img: "" },
+            { cod: "3597", desc: "ÓLEO DE ALOE VERA 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "1613", desc: "OLEO DE AMENDOAS DOCE 30ML", forn: "KRIFF", por: "6.28", img: "" },
+            { cod: "3588", desc: "ÓLEO DE CITRONELA 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3328", desc: "ÓLEO DE GIRASSOL DERSOL SPRAY 100ML", forn: "BELLA PHYTUS", por: "11.98", img: "" },
+            { cod: "2111", desc: "OLEO DE HORTELA C/ CX 20ML", forn: "PLUS MEL", por: "13.98", img: "" },
+            { cod: "3595", desc: "ÓLEO DE LAVANDA 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3599", desc: "ÓLEO DE LINHAÇA 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3600", desc: "ÓLEO DE MAMONA 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3971", desc: "ÓLEO DE MENTA 10ML", forn: "UNIAO FLORA", por: "7.98", img: "" },
+            { cod: "1496", desc: "ÓLEO DE MENTA 10ML", forn: "BONATURY", por: "7.98", img: "" },
+            { cod: "1557", desc: "OLEO DE MENTA DA ÍNDIA 20ML", forn: "NATUS BEL", por: "6.98", img: "" },
+            { cod: "3596", desc: "ÓLEO DE ORA PRO NOBIS CURCUMA+GENGIBRE 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3559", desc: "ÓLEO DE RÍCINO 100% PURO 30ML", forn: "JCO FARMA", por: "6.06", img: "" },
+            { cod: "3474", desc: "ÓLEO DE RÍCINO 100% PURO 60ML", forn: "JCO FARMA", por: "10.34", img: "" },
+            { cod: "3601", desc: "OLEO DE SANGUE DE DRAGÃO 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3589", desc: "ÓLEO DE TOMILHO 30ML", forn: "ESSÊNCIA NATURAL", por: "9.00", img: "" },
+            { cod: "3231", desc: "ÓLEO ESSENCIAL DE MANJERICÃO 10ML", forn: "SAÚDE DA TERRA", por: "13.30", img: "" },
+            { cod: "3230", desc: "ÓLEO ESSENCIAL DE TANGERINA 10ML", forn: "SAÚDE DA TERRA", por: "13.98", img: "" },
+            { cod: "2379", desc: "OLEO ESSENCIAL EUCALIPTO C/ CX 20ML", forn: "PLUS MEL", por: "11.98", img: "" },
+            { cod: "2380", desc: "ÓLEO ESSENCIAL LAVANDA C/ CX 20 ML", forn: "PLUS MEL", por: "15.98", img: "" },
+            { cod: "2218", desc: "OLEO MINERAL 100 ML", forn: "KRIFF", por: "13.14", img: "" },
+            { cod: "2109", desc: "ÓLEO NATURAL DE ROSA MOSQUETA C/ CX 20ML", forn: "PLUS MEL", por: "15.98", img: "" },
+            { cod: "3042", desc: "ÓLEO NATURAL ROSA MOSQUETA 10ML", forn: "UBERPHARMA", por: "15.36", img: "" },
+            { cod: "2966", desc: "ÓLEO VEGETAL COPAIBA C/CX 20ML", forn: "PLUS MEL", por: "15.98", img: "" },
+            { cod: "3242", desc: "ÓLEO VEGETAL DE ARGAN 10ML", forn: "SAÚDE DA TERRA", por: "8.50", img: "" },
+            { cod: "3341", desc: "PEDRA HUME CRISTAIS 70G", forn: "BELLA PHYTUS", por: "15.18", img: "" },
+            { cod: "3547", desc: "PEDRA HUME PÓ 30G", forn: "JCO FARMA", por: "5.08", img: "" },
+            { cod: "3342", desc: "PÓS SOL BISNAGA ALOE VERA E D PANTENOL 120G", forn: "BELLA PHYTUS", por: "11.98", img: "" },
+            { cod: "3353", desc: "PÓS SOL CALAMIX COM ALOE VERA 120G", forn: "BELLA PHYTUS", por: "11.58", img: "" },
+            { cod: "3343", desc: "SPRAY ANTISSÉPTICO CLOREXIDINA PROMADERME 30ML", forn: "BELLA PHYTUS", por: "9.38", img: "" },
+            { cod: "1726", desc: "SUCUPIRA COMPOSTA UNHA G GARRA D 500MG C/ 60 CAPS", forn: "BONATURY", por: "13.98", img: "" },
+            { cod: "2219", desc: "VASELINA LIQUIDA 100ML", forn: "KRIFF", por: "8.36", img: "" },
+            { cod: "3348", desc: "VASELINA LIQUIDA HIDRATANTE 100ML", forn: "BELLA PHYTUS", por: "10.08", img: "" },
+            { cod: "3475", desc: "VASELINA LIQUIDA HIDRATANTE 100ML", forn: "JCO FARMA", por: "6.90", img: "" },
+            { cod: "3558", desc: "VASELINA SÓLIDA 25G", forn: "JCO FARMA", por: "5.22", img: "" },
+            { cod: "3349", desc: "VASELINA SÓLIDA BISNAGA 25G", forn: "BELLA PHYTUS", por: "9.98", img: "" },
+            { cod: "3352", desc: "VASELINA SOLIDA POTE 25G", forn: "BELLA PHYTUS", por: "8.78", img: "" },
+            { cod: "2289", desc: "VIOLETA GENCIANA 30ML", forn: "KRIFF", por: "5.46", img: "" }
+        ];
+
+        function sortAlphabetically() {
+            produtos.sort((a, b) => a.desc.localeCompare(b.desc));
+        }
+
+        function renderProducts(data = produtos) {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+            data.forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-card p-4 relative">
+                        ${isAdmin ? `<button onclick="deleteProduct('${p.cod}')" class="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full z-10 shadow-lg hover:bg-red-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        <img src="${p.img || 'https://via.placeholder.com/300x200?text=Sem+Foto'}" class="product-img">
+                        <div class="py-4 flex-grow">
+                            <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase">${p.forn}</span>
+                            <h3 class="font-bold text-slate-800 text-base mt-2 mb-1 h-12 overflow-hidden uppercase">${p.desc}</h3>
+                            <p class="text-xs text-slate-400 font-mono">CÓD: ${p.cod}</p>
+                        </div>
+                        <div class="pt-4 border-t">
+                            <div class="flex justify-between items-end mb-4">
+                                <div><p class="text-[10px] text-slate-500 uppercase font-bold">Preço</p><p class="text-2xl font-black text-emerald-600">R$ ${p.por}</p></div>
+                                <div class="w-28"><p class="text-[10px] text-center uppercase font-bold text-slate-500">Qtd</p><input type="number" id="qty-${p.cod}" value="1" min="1" class="w-full p-4 text-xl border rounded-lg text-center font-bold"></div>
+                            </div>
+                            <button onclick="addToCart('${p.cod}')" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-600 transition-all">
+                                <i data-lucide="shopping-basket" class="w-5 h-5"></i> ADICIONAR
+                            </button>
+                        </div>
+                    </div>`;
+            });
+            lucide.createIcons();
+        }
+
+        function addProduct() {
+            const cod = document.getElementById('newCod').value.trim();
+            const forn = document.getElementById('newForn').value.trim().toUpperCase();
+            const desc = document.getElementById('newDesc').value.trim().toUpperCase();
+            const price = document.getElementById('newPrice').value.trim().replace(',', '.');
+
+            if (!cod || !forn || !desc || !price) {
+                return alert("Preencha todos os campos para cadastrar!");
+            }
+
+            const novoProduto = {
+                cod: cod,
+                desc: desc,
+                forn: forn,
+                por: parseFloat(price).toFixed(2),
+                img: ""
+            };
+
+            produtos.push(novoProduto);
+            sortAlphabetically();
+            renderProducts();
+            
+            document.getElementById('newCod').value = '';
+            document.getElementById('newForn').value = '';
+            document.getElementById('newDesc').value = '';
+            document.getElementById('newPrice').value = '';
+            
+            alert("Produto cadastrado com sucesso!");
+        }
+
+        function deleteProduct(cod) {
+            if(confirm("Deseja realmente excluir este produto?")) {
+                produtos = produtos.filter(p => p.cod !== cod);
+                renderProducts();
+            }
+        }
+
+        function updateFileNameLabel() {
+            const file = document.getElementById('fileInput').files[0];
+            document.getElementById('fileNameDisplay').innerText = file ? file.name : "Nenhum arquivo selecionado";
+        }
+
+        function processUpload() {
+            const cod = document.getElementById('imgTargetCod').value.trim();
+            const name = document.getElementById('imgTargetName').value.trim().toLowerCase();
+            const fileInput = document.getElementById('fileInput');
+            
+            if(!cod && !name) return alert("Identifique o produto por Código ou Nome!");
+            if(!fileInput.files[0]) return alert("Selecione uma imagem primeiro!");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                let idx = -1;
+                
+                if(cod) idx = produtos.findIndex(p => String(p.cod).trim() === cod);
+                if(idx === -1 && name) idx = produtos.findIndex(p => p.desc.toLowerCase().includes(name));
+
+                if(idx !== -1) {
+                    produtos[idx].img = base64Image;
+                    renderProducts();
+                    alert("Foto vinculada com sucesso!");
+                    document.getElementById('imgTargetCod').value = '';
+                    document.getElementById('imgTargetName').value = '';
+                    fileInput.value = '';
+                    updateFileNameLabel();
+                } else {
+                    alert("Produto não encontrado!");
+                }
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+
+        // FUNÇÃO DE LOGIN PROTEGIDA (BTOA OFUSCATION)
+        function handleAdminClick() {
+            clickCount++;
+            if (clickCount === 7) {
+                const input = prompt("Senha:");
+                // A string "bHQ4OGJhMTQ=" é o código da sua senha 'lt88ba14' em Base64.
+                // Isso impede que a senha apareça em texto limpo no código-fonte.
+                if (btoa(input) === "bHQ4OGJhMTQ=") {
+                    isAdmin = true;
+                    document.getElementById('adminPanel').classList.remove('admin-hidden');
+                    renderProducts();
+                } else {
+                    alert("Senha incorreta.");
+                }
+                clickCount = 0;
+            }
+        }
+
+        function exitAdmin() { 
+            isAdmin = false; 
+            document.getElementById('adminPanel').classList.add('admin-hidden'); 
+            renderProducts(); 
+        }
+        
+        function filterProducts() {
+            const t = document.getElementById('searchInput').value.toLowerCase();
+            const filtrados = produtos.filter(p => p.desc.toLowerCase().includes(t) || String(p.cod).includes(t));
+            renderProducts(filtrados);
+        }
+
+        function addToCart(cod) {
+            const p = produtos.find(x => x.cod === cod);
+            const qtyInput = document.getElementById(`qty-${cod}`);
+            const qtd = parseInt(qtyInput.value) || 1;
+            const existente = cart.find(item => item.cod === cod);
+
+            if (existente) { existente.qtd += qtd; } else { cart.push({...p, qtd}); }
+
+            document.getElementById('cartCount').innerText = cart.length;
+            qtyInput.value = 1;
+            alert(`${p.desc} adicionado!`);
+        }
+
+        function atualizarCarrinho() {
+            let html = '';
+            let total = 0;
+            if (cart.length === 0) {
+                html = '<p class="text-center text-gray-500 py-10">Seu pedido está vazio.</p>';
+            } else {
+                cart.forEach((item, index) => {
+                    const subtotal = item.qtd * parseFloat(item.por);
+                    total += subtotal;
+                    html += `
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-slate-800 text-sm uppercase">${item.desc}</h4>
+                            <p class="text-xs text-slate-500 font-mono">CÓD: ${item.cod} | Qtd: ${item.qtd}</p>
+                            <p class="text-emerald-600 font-black">R$ ${subtotal.toFixed(2)}</p>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 p-2"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>`;
+                });
+                html += `
+                <div class="bg-blue-600 text-white p-6 rounded-2xl mt-4 shadow-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold uppercase opacity-80">Total do Pedido</span>
+                        <span class="text-3xl font-black">R$ ${total.toFixed(2)}</span>
+                    </div>
+                </div>`;
+            }
+            document.getElementById('cartItems').innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            document.getElementById('cartCount').innerText = cart.length;
+            atualizarCarrinho();
+        }
+
+        function toggleCart() {
+            atualizarCarrinho();
+            const m = document.getElementById('cartModal');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function sendToWhatsApp() {
+            if(cart.length === 0) return alert('Adicione produtos primeiro!');
+            let texto = '*NOVO PEDIDO - OUXE REPRESENTAÇÕES*%0A%0A';
+            let total = 0;
+            cart.forEach(item => {
+                const subtotal = item.qtd * parseFloat(item.por);
+                total += subtotal;
+                texto += `📦 *${item.desc}*%0A`;
+                texto += `Cód: ${item.cod} | Qtd: ${item.qtd}%0A`;
+                texto += `Subtotal: R$ ${subtotal.toFixed(2)}%0A%0A`;
+            });
+            texto += `*TOTAL FINAL: R$ ${total.toFixed(2)}*`;
+            window.open(`https://wa.me/5575981236160?text=${texto}`, '_blank');
+        }
+        
+        sortAlphabetically();
+        renderProducts();
+    </script>
+</body>
+</html>
